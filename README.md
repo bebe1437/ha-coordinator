@@ -1,5 +1,5 @@
 # ha-coordinator
-ha-coordinator is a simple failover cluster and based on Zookeeper and build on Curator. 
+ha-coordinator is a simple failover cluster based on Zookeeper and build on Curator. 
 
 ## Build
 ./build.sh
