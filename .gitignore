@@ -3,4 +3,6 @@ target/
 log/
 *.tar.gz
 *.pid
+.DS_Store
+ha-coordinator/
 

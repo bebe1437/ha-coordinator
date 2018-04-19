@@ -1,6 +1,6 @@
-package com.bebe.zookeeper.process;
+package com.bebe.curator.process;
 
-import com.bebe.zookeeper.cluster.ZookeeperManager;
+import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,12 +10,12 @@ public class ProcessStatusMonitor implements Callable<Integer>{
     private static final  Logger LOG = LoggerFactory.getLogger(ProcessStatusMonitor.class);
 
     private Process process;
-    private ZookeeperManager zkManager;
+    private CuratorFramework client;
 
 
-    public ProcessStatusMonitor(ZookeeperManager zkManager , Process process){
+    public ProcessStatusMonitor(CuratorFramework client , Process process){
         this.process = process;
-        this.zkManager = zkManager;
+        this.client = client;
     }
 
     public Integer call() {
@@ -23,7 +23,7 @@ public class ProcessStatusMonitor implements Callable<Integer>{
             try{
                 int exitValue = process.exitValue();
                 LOG.error("\t=== Processor exit:{} ===", exitValue);
-                zkManager.stop();
+                client.close();
                 return exitValue;
             }catch (Exception e){
                 //LOG.info("\t=== Processor is still running. ===");

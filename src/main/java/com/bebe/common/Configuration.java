@@ -1,4 +1,4 @@
-package com.bebe.zookeeper.common;
+package com.bebe.common;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +17,7 @@ public class Configuration {
     private static final Logger LOG = LoggerFactory.getLogger(Configuration.class);
     private static final Properties SERVER_PROPS = System.getProperties();
     private static final String CONF_PATH = "./conf/";
-    private static final String KEY_RESOURCE_FILE = "resource";
+    private static final String KEY_RESOURCE_FILE = "config.resource";
     private static final String DEFAULT_PROPERTIES = "default.properties";
     private static Properties RESOURCE_PROPS;
     private static Properties DEFAULT_RESOURCE_PROPS;
@@ -225,8 +225,8 @@ public class Configuration {
      *
      * @return
      */
-    public static long getStopBufferTime() {
-        return Long.valueOf(getProperty("buffer", "3000"));
+    public static long getBufferTime() {
+        return Long.valueOf(getProperty("buffer.time", "3000"));
     }
 
     /**

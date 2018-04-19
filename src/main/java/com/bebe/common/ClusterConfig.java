@@ -1,4 +1,4 @@
-package com.bebe.zookeeper.common;
+package com.bebe.common;
 
 import com.google.gson.annotations.SerializedName;
 

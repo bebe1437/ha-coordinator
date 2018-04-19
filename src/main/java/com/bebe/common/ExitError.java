@@ -1,4 +1,4 @@
-package com.bebe.zookeeper.common;
+package com.bebe.common;
 
 public enum ExitError {
     SHUTDOWN(-1),

@@ -26,7 +26,7 @@
         </encoder>
         
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <FileNamePattern>${LOG_HOME}/o-zk_${FILE_DATE}.%i.log</FileNamePattern>
+            <FileNamePattern>${LOG_HOME}/ha_${FILE_DATE}.%i.log</FileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>500MB</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
@@ -68,8 +68,8 @@
     </appender>
 
     <!-- Root -->
-    <root level="${com.mitake.logback.root.level:-INFO}">
-        <if condition='!property("com.mitake.logback.stdout.enabled").equalsIgnoreCase("false")'>
+    <root level="${logback.root.level:-INFO}">
+        <if condition='!property("logback.stdout.enabled").equalsIgnoreCase("false")'>
             <then>
                 <appender-ref ref="STDOUT" />
             </then>
