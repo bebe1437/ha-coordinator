@@ -16,14 +16,12 @@ public abstract class AbstractChildrenCache {
     private PathChildrenCache cache;
     protected Set<String> children = new HashSet<String>();
     protected CuratorFramework client;
+    private String parentPath;
 
     public AbstractChildrenCache(CuratorFramework client, String path){
         this.client = client;
+        this.parentPath = path;
         cache = new PathChildrenCache(client, path, true);
-    }
-
-    public Set<String> getChildren(){
-        return Collections.unmodifiableSet(children);
     }
 
     public void start() throws Exception{
@@ -35,7 +33,7 @@ public abstract class AbstractChildrenCache {
                     List<ChildData> childDataList = cache.getCurrentData();
                     Set<String> tmp = new HashSet<String>();
                     for (ChildData childData : childDataList) {
-                        String path = childData.getPath();
+                        String path = childData.getPath().replaceAll(parentPath+"/", "");
                         tmp.add(path);
                         if(children.contains(path)){
                             continue;

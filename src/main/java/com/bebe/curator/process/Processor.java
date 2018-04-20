@@ -4,10 +4,7 @@ package com.bebe.curator.process;
 import com.bebe.common.Configuration;
 import com.bebe.common.Constants;
 import com.bebe.common.Sleep;
-import com.bebe.curator.cluster.Cluster;
-import com.bebe.curator.cluster.ConfigManager;
-import com.bebe.curator.cluster.CuratorClientManager;
-import com.bebe.curator.cluster.Lock;
+import com.bebe.curator.cluster.*;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -18,6 +15,7 @@ import java.lang.reflect.Field;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Processor extends Lock {
@@ -31,6 +29,10 @@ public class Processor extends Lock {
     private ConfigManager configManager;
     private CuratorFramework client;
     private AtomicInteger retries = new AtomicInteger(0);
+    private AtomicInteger seq = new AtomicInteger(0);
+    private String createdPath;
+
+    private Semaphore restartLock = new Semaphore(1);
 
 
     public Processor(ConfigManager configManager){
@@ -40,13 +42,12 @@ public class Processor extends Lock {
 
     @Override
     protected CuratorFramework getClient() {
-        client = CuratorClientManager.start();
-        return client;
-    }
-
-    @Override
-    protected void before() {
-        stop();
+        if(client!=null && client.getZookeeperClient().isConnected()){
+            return client;
+        }else {
+            client = CuratorClientManager.start(new StateListener("proccess-" + seq.incrementAndGet()));
+            return client;
+        }
     }
 
     @Override
@@ -61,19 +62,24 @@ public class Processor extends Lock {
             } else if (processes.size() > max) {
                 if (processes.contains(Constants.AGENT_NAME)) {
                     log.info("\t=== Alive processors reach maximum:{} ===", max);
-                    stop();
+                    stop("process-reach maximum");
                 }
             }
         }catch (Exception e){
             log.error("\t=== fail to retrieve children:{} ===", e);
-            stop();
+            stop("process-exception");
         }
+    }
+
+    public synchronized String getCreatedPath(){
+        return createdPath;
     }
 
     private void register(){
         try {
-            client.create()
+            createdPath = client.create()
                     .creatingParentsIfNeeded()
+                    .withProtection()
                     .withMode(CreateMode.EPHEMERAL)
                     .forPath(NODE_PATH);
             runProcess();
@@ -125,22 +131,43 @@ public class Processor extends Lock {
 
         }catch (Exception e){
             log.error("\t=== outputProcessID:{} ===", e);
-            stop();
+            stop("outputProcessID");
         }
     }
 
     private void startMonitor(){
-        executorService.submit(new ProcessStatusMonitor(client, process));
+        executorService.submit(new ProcessStatusMonitor(this, process));
         executorService.submit(new ProcessErrorMonitor(process));
     }
 
-    public void stop(){
-        log.info("\t=== stop. ===");
+    public void stop(String who){
+        log.info("\t=== {} stop ===", who);
         if(process !=null){
             process.destroy();
         }
         if(client!=null) {
-            client.close();
+            try {
+                client.delete().guaranteed().forPath(createdPath);
+            }catch (KeeperException.NoNodeException e){
+            }catch (Exception e){
+                log.error("\t=== fail to delete:{} ===", e);
+                client.close();
+            }
+        }
+    }
+
+    public void restart(String who){
+        try {
+            restartLock.acquire();
+            //sleep for a while in case restart too often
+            Sleep.start();
+            stop(who + "-restart");
+            start();
+        }catch (Exception e){
+            log.error("\t=== restart:{} ===", e);
+            restart(who);
+        }finally{
+            restartLock.release();
         }
     }
 }

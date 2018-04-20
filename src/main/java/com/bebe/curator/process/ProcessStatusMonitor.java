@@ -1,6 +1,5 @@
 package com.bebe.curator.process;
 
-import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,12 +9,12 @@ public class ProcessStatusMonitor implements Callable<Integer>{
     private static final  Logger LOG = LoggerFactory.getLogger(ProcessStatusMonitor.class);
 
     private Process process;
-    private CuratorFramework client;
+    private Processor processor;
 
 
-    public ProcessStatusMonitor(CuratorFramework client , Process process){
+    public ProcessStatusMonitor(Processor processor , Process process){
         this.process = process;
-        this.client = client;
+        this.processor = processor;
     }
 
     public Integer call() {
@@ -23,7 +22,7 @@ public class ProcessStatusMonitor implements Callable<Integer>{
             try{
                 int exitValue = process.exitValue();
                 LOG.error("\t=== Processor exit:{} ===", exitValue);
-                client.close();
+                processor.restart("ProcessStatusMonitor");
                 return exitValue;
             }catch (Exception e){
                 //LOG.info("\t=== Processor is still running. ===");

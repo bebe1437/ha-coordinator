@@ -29,6 +29,7 @@ public class Agent {
         try {
             client.create()
                     .creatingParentsIfNeeded()
+                    .withProtection()
                     .withMode(CreateMode.EPHEMERAL)
                     .forPath(NODE_PATH);
             cluster.startProcess();

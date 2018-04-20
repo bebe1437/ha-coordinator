@@ -16,14 +16,11 @@ public abstract class Lock {
         this.lockPath = lockPath;
     }
 
-    protected abstract void before();
     protected abstract CuratorFramework getClient();
-    protected void after(){}
     protected abstract void process();
 
     public void start(){
         log.info("\t=== start locking... ===");
-        before();
 
         CuratorFramework client = getClient();
 
@@ -42,7 +39,6 @@ public abstract class Lock {
             }catch (Exception e){
                 log.debug("\t=== release lock:{} ===", e);
             }
-            after();
         }
     }
 }

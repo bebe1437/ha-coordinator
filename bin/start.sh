@@ -7,7 +7,7 @@ if [ ! -d "log" ]; then
 	mkdir log
 fi
 
-./ha-start.sh >> log/nohup.log 2>&1 &
+./ha-start.sh $1 >> log/nohup.log 2>&1 &
 
 sleep 3
 pid=$(cat $pidfile.tmp)

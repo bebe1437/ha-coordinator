@@ -28,7 +28,7 @@ public class Cluster{
     private AgentCache agentCache;
     private ProcessCache processCache;
     public Cluster(){
-        client = CuratorClientManager.start();
+        client = CuratorClientManager.start(new StateListener("cluster"));
     }
 
     public void shutdown(){

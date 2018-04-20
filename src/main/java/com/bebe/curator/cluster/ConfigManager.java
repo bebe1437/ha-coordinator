@@ -57,7 +57,13 @@ public class ConfigManager extends Lock {
 
     public synchronized void setUp(String configuration){
         LOG.info("\t=== setUp config:{} ===", configuration);
-        ClusterConfig tmp = gson.fromJson(configuration, ClusterConfig.class);
+        ClusterConfig tmp = null;
+        try {
+            tmp = gson.fromJson(configuration, ClusterConfig.class);
+        }catch (Exception e){
+            LOG.error("\t=== fail to reset config[{}]:{} ===", configuration, e);
+            return;
+        }
         if(clusterConfig == null){
             clusterConfig = new ClusterConfig()
             .setCommand(tmp.getCommand())
@@ -75,9 +81,6 @@ public class ConfigManager extends Lock {
             cluster.recheckMaximumProcessors();
         }
     }
-
-    @Override
-    protected void before() {}
 
     @Override
     protected void process() {
