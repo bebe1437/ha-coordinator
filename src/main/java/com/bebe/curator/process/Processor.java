@@ -1,11 +1,12 @@
 package com.bebe.curator.process;
 
 
-import com.bebe.common.Configuration;
-import com.bebe.common.Constants;
 import com.bebe.common.Sleep;
 import com.bebe.curator.cluster.*;
+import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 
@@ -19,25 +20,28 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Processor extends Lock {
-    private static final String LOCK_PATH = String.format("%s/process_lock", Cluster.CLUSTER_NODE_PATH);
-    public static final String NODE_PATH = String.format("%s/%s", Cluster.PROCESS_NODE_PATH, Constants.AGENT_NAME);
     private static final String PROCESS_PID_FILE = "process.pid";
-    private static final int MAX_RETRIES = Configuration.getRetries();
 
+    private Cluster cluster;
     private Process process;
     private ExecutorService executorService = Executors.newFixedThreadPool(2);
     private ConfigManager configManager;
     private CuratorFramework client;
     private AtomicInteger retries = new AtomicInteger(0);
     private AtomicInteger seq = new AtomicInteger(0);
+
     private String createdPath;
-
     private Semaphore restartLock = new Semaphore(1);
+    private String nodePath;
 
 
-    public Processor(ConfigManager configManager){
-        super(LOCK_PATH);
+    public Processor(Cluster cluster, ConfigManager configManager){
+        super(cluster.getBufferTime(), String.format("%s/process_lock", cluster.getClusterNodePath()));
+        log.info("createProcessor");
+
+        this.cluster = cluster;
         this.configManager = configManager;
+        nodePath = String.format("%s/%s", cluster.getProcessNodePath(), cluster.getAgentName());
     }
 
     @Override
@@ -45,7 +49,16 @@ public class Processor extends Lock {
         if(client!=null && client.getZookeeperClient().isConnected()){
             return client;
         }else {
-            client = CuratorClientManager.start(new StateListener("proccess-" + seq.incrementAndGet()));
+            RetryPolicy retryPolicy = new ExponentialBackoffRetry((int)cluster.getBufferTime(), cluster.getMaxRetries());
+            CuratorFramework client = CuratorFrameworkFactory
+                    .builder()
+                    .connectString(cluster.getZKHost())
+                    .retryPolicy(retryPolicy)
+                    .sessionTimeoutMs(cluster.getSessionTimeout())
+                    .build();
+            client.getConnectionStateListenable().addListener(new StateListener("proccess-" + seq.incrementAndGet()));
+            client.start();
+            this.client = client;
             return client;
         }
     }
@@ -53,14 +66,14 @@ public class Processor extends Lock {
     @Override
     protected void process() {
         try {
-            List<String> processes = client.getChildren().forPath(Cluster.PROCESS_NODE_PATH);
+            List<String> processes = client.getChildren().forPath(cluster.getProcessNodePath());
             int max = configManager.getMaxProcessors();
             if (processes.size() < max) {
-                if (!processes.contains(Constants.AGENT_NAME)) {
+                if (!processes.contains(cluster.getAgentName())) {
                     register();
                 }
             } else if (processes.size() > max) {
-                if (processes.contains(Constants.AGENT_NAME)) {
+                if (processes.contains(cluster.getAgentName())) {
                     log.info("\t=== Alive processors reach maximum:{} ===", max);
                     stop("process-reach maximum");
                 }
@@ -81,15 +94,15 @@ public class Processor extends Lock {
                     .creatingParentsIfNeeded()
                     .withProtection()
                     .withMode(CreateMode.EPHEMERAL)
-                    .forPath(NODE_PATH);
+                    .forPath(nodePath);
             runProcess();
         }catch (KeeperException.NodeExistsException e){
             int retry = retries.incrementAndGet();
-            if(retry<MAX_RETRIES){
-                log.error("\t=== Retry to register process:{}. ===", NODE_PATH);
+            if(retry<cluster.getMaxRetries()){
+                log.error("\t=== Retry to register process:{}. ===", nodePath);
                 register();
             }else{
-                log.error("\t=== Duplicated Process:{} registered. ===", NODE_PATH);
+                log.error("\t=== Duplicated Process:{} registered. ===", nodePath);
                 client.close();
             }
         }catch (Exception e){
@@ -147,7 +160,11 @@ public class Processor extends Lock {
         }
         if(client!=null) {
             try {
-                client.delete().guaranteed().forPath(createdPath);
+                if(createdPath!=null) {
+                    synchronized (createdPath) {
+                        client.delete().guaranteed().forPath(createdPath);
+                    }
+                }
             }catch (KeeperException.NoNodeException e){
             }catch (Exception e){
                 log.error("\t=== fail to delete:{} ===", e);

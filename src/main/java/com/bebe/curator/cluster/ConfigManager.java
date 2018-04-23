@@ -1,7 +1,6 @@
 package com.bebe.curator.cluster;
 
 import com.bebe.common.ClusterConfig;
-import com.bebe.common.Configuration;
 import com.bebe.curator.cache.ConfCache;
 import com.google.gson.Gson;
 import org.apache.curator.framework.CuratorFramework;
@@ -14,25 +13,32 @@ import java.nio.charset.Charset;
 
 public class ConfigManager extends Lock {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigManager.class);
-    private static final String LOCK_PATH = String.format("%s/conf_lock", Cluster.CLUSTER_NODE_PATH);
-    public static final String NODE_PATH = String.format("%s/conf", Cluster.CLUSTER_NODE_PATH);
 
-    private CuratorFramework client;
-    private ClusterConfig clusterConfig;
     private Cluster cluster;
+    private CuratorFramework client;
+
+    private ClusterConfig clusterConfig;
     private Gson gson;
     private ConfCache confCache;
     private Charset charset;
+    private String confNodePath;
 
-    public ConfigManager(Cluster cluster, CuratorFramework client){
-        super(LOCK_PATH);
+    public ConfigManager(Cluster cluster){
+        super(cluster.getBufferTime(), String.format("%s/conf_lock", cluster.getClusterNodePath()));
+        LOG.info("createConfigManager");
+
         this.cluster = cluster;
-        this.client = client;
+        this.client = cluster.getClient();
+        confNodePath = String.format("%s/conf", cluster.getClusterNodePath());
         gson = new Gson();
         confCache = new ConfCache(client, this);
         charset = Charset.forName("UTF-8");
+
     }
 
+    public String getConfNodePath(){
+        return confNodePath;
+    }
 
     @Override
     protected CuratorFramework getClient() {
@@ -85,24 +91,24 @@ public class ConfigManager extends Lock {
     @Override
     protected void process() {
         try {
-            if (client.checkExists().creatingParentsIfNeeded().forPath(NODE_PATH) == null) {
+            if (client.checkExists().creatingParentsIfNeeded().forPath(confNodePath) == null) {
                 clusterConfig = new ClusterConfig()
-                        .setCommand(Configuration.getCommand())
-                        .setMaxProcessors(Configuration.getMaximunProcessors());
+                        .setCommand(cluster.getCommand())
+                        .setMaxProcessors(cluster.getMaxProcessors());
                 String json = gson.toJson(clusterConfig);
                 LOG.info("\t=== upload config:{} ===", json);
                 client.create()
                         .withMode(CreateMode.PERSISTENT)
-                        .forPath(NODE_PATH, json.getBytes(charset));
+                        .forPath(confNodePath, json.getBytes(charset));
             }else{
-                byte[] data = client.getData().forPath(NODE_PATH);
+                byte[] data = client.getData().forPath(confNodePath);
                 setUp(new String(data, charset));
             }
             confCache.start();
         }catch (KeeperException.NodeExistsException e){
         }catch (Exception e){
             LOG.error("\t=== check conf node:{} ===", e);
-            cluster.shutdown();
+            cluster.shutdown("ConfigManager-process-Exception");
         }
     }
 }

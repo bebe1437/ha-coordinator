@@ -10,27 +10,28 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public abstract class AbstractChildrenCache {
+public abstract class AbstractChildrenCache extends PathChildrenCache {
     protected Logger log = LoggerFactory.getLogger(getClass());
 
-    private PathChildrenCache cache;
     protected Set<String> children = new HashSet<String>();
     protected CuratorFramework client;
     private String parentPath;
 
+
     public AbstractChildrenCache(CuratorFramework client, String path){
+        super(client, path, true);
         this.client = client;
         this.parentPath = path;
-        cache = new PathChildrenCache(client, path, true);
     }
 
+    @Override
     public void start() throws Exception{
-        cache.start();
-        cache.getListenable().addListener(new PathChildrenCacheListener() {
+        super.start();
+        super.getListenable().addListener(new PathChildrenCacheListener() {
             @Override
             public void childEvent(CuratorFramework curatorFramework, PathChildrenCacheEvent pathChildrenCacheEvent) throws Exception {
                 synchronized (children){
-                    List<ChildData> childDataList = cache.getCurrentData();
+                    List<ChildData> childDataList = getCurrentData();
                     Set<String> tmp = new HashSet<String>();
                     for (ChildData childData : childDataList) {
                         String path = childData.getPath().replaceAll(parentPath+"/", "");
@@ -39,14 +40,14 @@ public abstract class AbstractChildrenCache {
                             continue;
                         }
                         children.add(path);
-                        log.info("\t=== add:{}  ===", path);
+                        log.info("\t=== add: {}  ===", path);
                     }
 
                     for(Iterator<String> it = children.iterator(); it.hasNext();){
                         String path = it.next();
                         if(!tmp.contains(path)){
                             it.remove();
-                            log.info("\t=== remove:{} ===", path);
+                            log.info("\t=== remove: {} ===", path);
                         }
                     }
 
@@ -58,9 +59,9 @@ public abstract class AbstractChildrenCache {
 
     public void stop(){
         try {
-            cache.close();
+            close();
         }catch (Exception e){
-            log.error("\t=== stop:{} ===", e);
+            log.error("\t=== stop: {} ===", e);
         }
     }
 

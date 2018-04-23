@@ -1,11 +1,10 @@
 package com.bebe.curator.cluster;
 
-import com.bebe.common.Constants;
-import com.bebe.common.ExitError;
 import com.bebe.curator.cache.AgentCache;
 import com.bebe.curator.cache.ProcessCache;
 import com.bebe.curator.process.Processor;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -13,51 +12,51 @@ import org.slf4j.LoggerFactory;
 
 public class Cluster{
     private static final Logger LOG = LoggerFactory.getLogger(Cluster.class);
-    public static final String CLUSTER_NODE_PATH;
-    public static final String AGENT_NODE_PATH;
-    public static final String PROCESS_NODE_PATH;
-
-    static{
-        CLUSTER_NODE_PATH = String.format("/%s", Constants.CLUSTER_NAME);
-        AGENT_NODE_PATH = String.format("%s/agents", CLUSTER_NODE_PATH);
-        PROCESS_NODE_PATH = String.format("%s/processes", CLUSTER_NODE_PATH);
-    }
 
     private CuratorFramework client;
     private Processor processor;
     private AgentCache agentCache;
     private ProcessCache processCache;
-    public Cluster(){
-        client = CuratorClientManager.start(new StateListener("cluster"));
-    }
+    private Boolean isShutdown = false;
 
-    public void shutdown(){
-        client.close();
-        System.exit(ExitError.SHUTDOWN.getCode());
+    private ClusterFactory.Builder builder;
+    private String clusterNodePath;
+    private String agentNodePath;
+    private String processNodePath;
+
+    public Cluster(ClusterFactory.Builder builder, CuratorFramework client){
+        this.builder = builder;
+        this.client = client;
+
+        clusterNodePath = String.format("/%s", builder.getClusterName());
+        agentNodePath = String.format("%s/agents", clusterNodePath);
+        processNodePath = String.format("%s/processes", clusterNodePath);
     }
 
     public void start(){
-        ConfigManager configManager = new ConfigManager(this, client);
-        processor = new Processor(configManager);
+        createAgentNode();
+
+        ConfigManager configManager = new ConfigManager(this);
+        processor = new Processor(this, configManager);
         configManager.init();
 
-        createAgentNode();
         createProcessNode(configManager);
 
-        new Agent(this, client).register();
+        new Agent(this).register();
     }
 
     private void createAgentNode(){
+        LOG.info("createAgentNode");
         try {
             client.create()
                     .creatingParentsIfNeeded()
                     .withMode(CreateMode.PERSISTENT)
-                    .forPath(AGENT_NODE_PATH);
+                    .forPath(agentNodePath);
         }catch (KeeperException.NodeExistsException e){
         }catch (Exception e){
             LOG.error("\t=== createAgentNode:{} ===", e);
         }
-        agentCache = new AgentCache(client, AGENT_NODE_PATH);
+        agentCache = new AgentCache(client, agentNodePath);
 
         try {
             agentCache.start();
@@ -67,16 +66,17 @@ public class Cluster{
     }
 
     private void createProcessNode(ConfigManager configManager){
+        LOG.info("createProcessNode");
         try {
             client.create()
                     .creatingParentsIfNeeded()
                     .withMode(CreateMode.PERSISTENT)
-                    .forPath(PROCESS_NODE_PATH);
+                    .forPath(processNodePath);
         }catch (KeeperException.NodeExistsException e){
         }catch (Exception e){
             LOG.error("\t=== createProcessNode:{} ===", e);
         }
-        processCache = new ProcessCache(client, processor, configManager);
+        processCache = new ProcessCache(this, processor, configManager);
 
         try{
             processCache.start();
@@ -85,11 +85,71 @@ public class Cluster{
         }
     }
 
+    public void shutdown(String who){
+        LOG.info("\t==={}: shutdown ===", who);
+
+        CloseableUtils.closeQuietly(processCache);
+        CloseableUtils.closeQuietly(agentCache);
+        CloseableUtils.closeQuietly(client);
+        synchronized (isShutdown){
+            isShutdown = true;
+            processor.stop("shutdown");
+        }
+    }
+
+    public synchronized Boolean isShutdown(){
+        return isShutdown;
+    }
+
     public void startProcess(){
         processor.start();
     }
 
     public void recheckMaximumProcessors(){
         processCache.recheck();
+    }
+
+    public String getZKHost(){
+        return builder.getZkHost();
+    }
+
+    public int getSessionTimeout(){
+        return builder.getSessionTimeout();
+    }
+
+    public String getClusterNodePath() {
+        return clusterNodePath;
+    }
+
+    public String getAgentNodePath() {
+        return agentNodePath;
+    }
+
+    public String getProcessNodePath() {
+        return processNodePath;
+    }
+
+    public String getAgentName(){
+        return builder.getAgentName();
+    }
+
+    public int getMaxRetries(){
+        return builder.getMaxRetries();
+    }
+
+    public CuratorFramework getClient(){
+        return client;
+    }
+
+    public String getCommand(){
+        return builder.getCommand();
+    }
+
+    public int getMaxProcessors(){
+        return builder.getMaxProcessors();
+    }
+
+    public long getBufferTime(){
+        return builder.getBufferTime();
     }
 }

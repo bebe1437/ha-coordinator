@@ -13,7 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
-public class Configuration {
+class Configuration {
     private static final Logger LOG = LoggerFactory.getLogger(Configuration.class);
     private static final Properties SERVER_PROPS = System.getProperties();
     private static final String CONF_PATH = "./conf/";

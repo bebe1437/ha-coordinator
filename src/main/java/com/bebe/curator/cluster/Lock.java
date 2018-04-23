@@ -1,6 +1,5 @@
 package com.bebe.curator.cluster;
 
-import com.bebe.common.Constants;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.slf4j.Logger;
@@ -11,9 +10,11 @@ import java.util.concurrent.TimeUnit;
 public abstract class Lock {
     protected Logger log = LoggerFactory.getLogger(getClass());
     private String lockPath;
+    private long bufferTIme;
 
-    public Lock(String lockPath){
+    public Lock(long bufferTime, String lockPath){
         this.lockPath = lockPath;
+        this.bufferTIme = bufferTime;
     }
 
     protected abstract CuratorFramework getClient();
@@ -26,7 +27,7 @@ public abstract class Lock {
 
         InterProcessMutex lock = new InterProcessMutex(client, lockPath);
         try {
-            if(lock.acquire(Constants.BUFFER_TIME, TimeUnit.MICROSECONDS)){
+            if(lock.acquire(bufferTIme, TimeUnit.MICROSECONDS)){
                 process();
             }
         }catch (Exception e){

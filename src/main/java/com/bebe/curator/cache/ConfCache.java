@@ -10,7 +10,7 @@ public class ConfCache extends AbstractNodeCache{
     private ConfigManager configManager;
 
     public ConfCache(CuratorFramework client, ConfigManager configManager){
-        super(client, ConfigManager.NODE_PATH);
+        super(client, configManager.getConfNodePath());
         this.configManager = configManager;
     }
 
@@ -21,6 +21,6 @@ public class ConfCache extends AbstractNodeCache{
 
     @Override
     protected void remove() {
-        log.warn("\t=== {} was removed. ===", ConfigManager.NODE_PATH);
+        log.warn("\t=== {} was removed. ===", configManager.getConfNodePath());
     }
 }

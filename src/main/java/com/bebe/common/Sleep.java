@@ -4,7 +4,7 @@ public class Sleep {
 
     public static void start(){
         try {
-            Thread.sleep(Constants.BUFFER_TIME);
+            Thread.sleep(Configuration.getBufferTime());
         }catch (Exception e){}
     }
 }

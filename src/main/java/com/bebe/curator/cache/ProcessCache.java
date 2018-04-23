@@ -3,18 +3,16 @@ package com.bebe.curator.cache;
 import com.bebe.curator.cluster.Cluster;
 import com.bebe.curator.cluster.ConfigManager;
 import com.bebe.curator.process.Processor;
-import org.apache.curator.framework.CuratorFramework;
-
 import java.util.*;
 
-//use watch
 public class ProcessCache extends AbstractChildrenCache{
-    private static final String LOCK_PATH = String.format("%s/check_lock", Cluster.CLUSTER_NODE_PATH);
     private Processor processor;
     private ConfigManager configManager;
+    private Cluster cluster;
 
-    public ProcessCache(CuratorFramework client, Processor processor, ConfigManager configManager){
-        super(client, Cluster.PROCESS_NODE_PATH);
+    public ProcessCache(Cluster cluster, Processor processor, ConfigManager configManager){
+        super(cluster.getClient(), cluster.getProcessNodePath());
+        this.cluster = cluster;
         this.processor = processor;
         this.configManager = configManager;
     }
@@ -30,17 +28,17 @@ public class ProcessCache extends AbstractChildrenCache{
 
             int max = configManager.getMaxProcessors();
             String nodeName = processor.getCreatedPath();
-            if(nodeName == null){
-                return;
+            if(nodeName != null){
+                nodeName = nodeName.replaceAll(cluster.getProcessNodePath()+"/","");
             }
-            nodeName = nodeName.replaceAll(Cluster.PROCESS_NODE_PATH+"/","");
+
             if(children.size()> max){
-                if(children.contains(nodeName)) {
+                if(nodeName!=null && children.contains(nodeName)){
                     log.warn("\t=== Alive processors reach maximum:{} ===", max);
                     processor.stop("ProcessCache-reach maximum");
                 }
             }else if(children.size()<max){
-                if(!children.contains(nodeName)) {
+                if(nodeName == null || !children.contains(nodeName)){
                     processor.restart("ProcessCache");
                 }
             }
@@ -49,7 +47,7 @@ public class ProcessCache extends AbstractChildrenCache{
 
     public void recheck(){
         try {
-            List<String> childData = client.getChildren().forPath(Cluster.PROCESS_NODE_PATH);
+            List<String> childData = client.getChildren().forPath(cluster.getProcessNodePath());
 
             Set<String> tmp = new HashSet<String>();
             for (String path : childData) {

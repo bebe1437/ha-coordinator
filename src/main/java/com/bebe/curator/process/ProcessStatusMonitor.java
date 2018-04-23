@@ -22,7 +22,7 @@ public class ProcessStatusMonitor implements Callable<Integer>{
             try{
                 int exitValue = process.exitValue();
                 LOG.error("\t=== Processor exit:{} ===", exitValue);
-                processor.restart("ProcessStatusMonitor");
+                processor.stop("ProcessStatusMonitor");
                 return exitValue;
             }catch (Exception e){
                 //LOG.info("\t=== Processor is still running. ===");
