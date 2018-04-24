@@ -49,8 +49,8 @@ public class Cluster{
         configManager.init();
 
         createProcessNode(configManager);
-
         new Agent(this).register();
+        startProcessCache(processor, configManager);
     }
 
     private void createAgentNode(){
@@ -84,8 +84,10 @@ public class Cluster{
         }catch (Exception e){
             LOG.error("\t=== createProcessNode:{} ===", e);
         }
-        processCache = new ProcessCache(this, processor, configManager);
+    }
 
+    private void startProcessCache(Processor processor, ConfigManager configManager){
+        processCache = new ProcessCache(this, processor, configManager);
         try{
             processCache.start();
         }catch (Exception e){
@@ -160,6 +162,8 @@ public class Cluster{
     public long getBufferTime(){
         return builder.getBufferTime();
     }
+
+    public String getKill(){ return builder.getKill(); }
 
     public void restart(){
         processor.stop("restart");

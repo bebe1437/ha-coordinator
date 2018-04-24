@@ -62,6 +62,10 @@ public class ConfigManager extends Lock {
         return clusterConfig.getCommand();
     }
 
+    public synchronized String getKill(){
+        return clusterConfig.getKill();
+    }
+
     public synchronized void setUp(String configuration){
         LOG.info("\t=== setUp config:{} ===", configuration);
         ClusterConfig tmp = null;
@@ -74,7 +78,8 @@ public class ConfigManager extends Lock {
         if(clusterConfig == null){
             clusterConfig = new ClusterConfig()
             .setCommand(tmp.getCommand())
-            .setMaxProcessors(tmp.getMaxProcessors());
+            .setMaxProcessors(tmp.getMaxProcessors())
+            .setKill(tmp.getKill());
             return;
         }
 
@@ -87,6 +92,10 @@ public class ConfigManager extends Lock {
             clusterConfig.setMaxProcessors(tmp.getMaxProcessors());
             cluster.recheckMaximumProcessors();
         }
+
+        if(!tmp.getKill().equals(clusterConfig.getKill())){
+            clusterConfig.setKill(tmp.getKill());
+        }
     }
 
     @Override
@@ -95,7 +104,8 @@ public class ConfigManager extends Lock {
             if (client.checkExists().creatingParentsIfNeeded().forPath(confNodePath) == null) {
                 clusterConfig = new ClusterConfig()
                         .setCommand(cluster.getCommand())
-                        .setMaxProcessors(cluster.getMaxProcessors());
+                        .setMaxProcessors(cluster.getMaxProcessors())
+                        .setKill(cluster.getKill());
                 String json = gson.toJson(clusterConfig);
                 LOG.info("\t=== upload config:{} ===", json);
                 client.create()

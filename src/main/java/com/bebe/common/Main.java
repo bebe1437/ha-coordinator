@@ -14,6 +14,7 @@ public class Main {
                 .setClusterName(Configuration.getClusterName())
                 .setAgentName(Configuration.getAgentName())
                 .setCommand(Configuration.getCommand())
+                .setKill(Configuration.getKill())
                 .build();
 
         cluster.start();

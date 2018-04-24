@@ -20,7 +20,7 @@ public class ProcessErrorMonitor implements Runnable{
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
             String line;
-            while ((line = reader.readLine()) != null) {
+            while (reader.ready() && (line = reader.readLine()) != null) {
                 LOG.error(line);
             }
             reader.close();

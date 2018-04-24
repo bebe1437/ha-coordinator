@@ -21,6 +21,7 @@ public class ClusterTest {
     private static final String CLUSTER_NAME = "ClusterTest";
     private static final int SESSION_TIMEOUT = 15000;
     private static final int RETRIES = 3;
+    private static final String KILL = "./kill.sh";
 
     private CuratorFramework client;
     private TestingServer server;
@@ -68,6 +69,7 @@ public class ClusterTest {
                 .setMaxProcessors(maxProcessors)
                 .setMaxRetries(RETRIES)
                 .setCommand("top")
+                .setKill(KILL)
                 .build();
         cluster.start();
 
@@ -113,6 +115,7 @@ public class ClusterTest {
                 .setMaxProcessors(maxProcessors)
                 .setMaxRetries(RETRIES)
                 .setCommand("top")
+                .setKill(KILL)
                 .build();
 
         Cluster cluster2 = ClusterFactory.builder()
@@ -123,6 +126,7 @@ public class ClusterTest {
                 .setMaxProcessors(maxProcessors)
                 .setMaxRetries(RETRIES)
                 .setCommand("top")
+                .setKill(KILL)
                 .build();
 
         cluster1.start();
@@ -181,6 +185,7 @@ public class ClusterTest {
                 .setMaxProcessors(maxProcessors)
                 .setMaxRetries(RETRIES)
                 .setCommand("top")
+                .setKill(KILL)
                 .build();
 
         Cluster cluster2 = ClusterFactory.builder()
@@ -191,6 +196,7 @@ public class ClusterTest {
                 .setMaxProcessors(maxProcessors)
                 .setMaxRetries(RETRIES)
                 .setCommand("top")
+                .setKill(KILL)
                 .build();
 
         cluster1.start();
@@ -260,6 +266,7 @@ public class ClusterTest {
                 .setMaxProcessors(maxProcessors)
                 .setMaxRetries(RETRIES)
                 .setCommand("top")
+                .setKill(KILL)
                 .build();
 
         Cluster cluster2 = ClusterFactory.builder()
@@ -270,6 +277,7 @@ public class ClusterTest {
                 .setMaxProcessors(maxProcessors)
                 .setMaxRetries(RETRIES)
                 .setCommand("top")
+                .setKill(KILL)
                 .build();
 
         cluster1.start();
@@ -344,6 +352,7 @@ public class ClusterTest {
                 .setMaxProcessors(maxProcessors)
                 .setMaxRetries(RETRIES)
                 .setCommand("top")
+                .setKill(KILL)
                 .build();
 
         Cluster cluster2 = ClusterFactory.builder()
@@ -354,6 +363,7 @@ public class ClusterTest {
                 .setMaxProcessors(maxProcessors)
                 .setMaxRetries(RETRIES)
                 .setCommand("top")
+                .setKill(KILL)
                 .build();
 
         cluster1.start();
@@ -448,6 +458,7 @@ public class ClusterTest {
                 .setMaxProcessors(maxProcessors)
                 .setMaxRetries(RETRIES)
                 .setCommand("top")
+                .setKill(KILL)
                 .build();
         cluster.start();
 
@@ -459,6 +470,7 @@ public class ClusterTest {
         try{
             processes = client.getChildren().forPath(cluster.getProcessNodePath());
             agents = client.getChildren().forPath(cluster.getAgentNodePath());
+            Assert.assertEquals(1, processes.size());
             process = processes.get(0);
         }catch (Exception e){
             e.printStackTrace();
@@ -475,8 +487,6 @@ public class ClusterTest {
         }
 
         Sleep.start();
-        Sleep.start();
-
 
         System.err.println("getChildren");
         try{

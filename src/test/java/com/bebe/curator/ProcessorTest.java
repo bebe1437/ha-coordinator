@@ -25,6 +25,7 @@ public class ProcessorTest {
     private static final String CLUSTER_NAME = "ClusterTest";
     private static final int SESSION_TIMEOUT = 15000;
     private static final int RETRIES = 3;
+    private static final String KILL = "./kill.sh";
 
     private CuratorFramework client;
     private TestingServer server;
@@ -71,11 +72,13 @@ public class ProcessorTest {
                 .setMaxProcessors(maxProcessors)
                 .setMaxRetries(RETRIES)
                 .setCommand("top")
+                .setKill(KILL)
                 .build();
 
         ClusterConfig clusterConfig = new ClusterConfig()
                 .setMaxProcessors(maxProcessors)
-                .setCommand("top");
+                .setCommand("top")
+                .setKill(KILL);
         ConfigManager configManager = new ConfigManager(cluster);
         configManager.setUp(new Gson().toJson(clusterConfig));
         Processor processor = new Processor(cluster, configManager);
@@ -95,6 +98,7 @@ public class ProcessorTest {
         try{
             processes = client.getChildren().forPath(cluster.getProcessNodePath());
             process = processes.get(0);
+            System.err.println(processes);
         }catch (Exception e){
             e.printStackTrace();
             Assert.assertNull(e);
@@ -109,8 +113,11 @@ public class ProcessorTest {
 
         Sleep.start();
         Sleep.start();
+
         try{
             processes = client.getChildren().forPath(cluster.getProcessNodePath());
+            System.err.println(processes);
+            Assert.assertEquals(1, processes.size());
             Assert.assertTrue(!process.equals(processes.get(0)));
         }catch (Exception e){
             e.printStackTrace();

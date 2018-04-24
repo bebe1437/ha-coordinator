@@ -25,6 +25,7 @@ public class ClusterFactory {
         private int maxProcessors;
         private String command;
         private long bufferTime = 3000l;
+        private String kill;
 
         public Cluster build(){
             LOG.info("\t=== zkHost:{} ===", zkHost);
@@ -122,6 +123,15 @@ public class ClusterFactory {
 
         public Builder setMaxRetries(int maxRetries) {
             this.maxRetries = maxRetries;
+            return this;
+        }
+
+        public String getKill() {
+            return kill;
+        }
+
+        public Builder setKill(String kill) {
+            this.kill = kill;
             return this;
         }
     }

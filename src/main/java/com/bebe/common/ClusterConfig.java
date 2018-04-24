@@ -8,6 +8,8 @@ public class ClusterConfig {
     private String command;
     @SerializedName("p.max")
     private int maxProcessors;
+    @SerializedName("p.kill")
+    private String kill;
 
     public String getCommand() {
         return command;
@@ -24,6 +26,15 @@ public class ClusterConfig {
 
     public ClusterConfig setMaxProcessors(int maxProcessors) {
         this.maxProcessors = maxProcessors;
+        return this;
+    }
+
+    public String getKill() {
+        return kill;
+    }
+
+    public ClusterConfig setKill(String kill) {
+        this.kill = kill;
         return this;
     }
 }

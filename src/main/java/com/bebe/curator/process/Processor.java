@@ -2,7 +2,10 @@ package com.bebe.curator.process;
 
 
 import com.bebe.common.Sleep;
-import com.bebe.curator.cluster.*;
+import com.bebe.curator.cluster.Cluster;
+import com.bebe.curator.cluster.ConfigManager;
+import com.bebe.curator.cluster.Lock;
+import com.bebe.curator.cluster.StateListener;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -10,8 +13,7 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -24,7 +26,7 @@ public class Processor extends Lock {
 
     private Cluster cluster;
     private Process process;
-    private ExecutorService executorService = Executors.newFixedThreadPool(2);
+    private ExecutorService executorService = Executors.newFixedThreadPool(4);
     private ConfigManager configManager;
     private CuratorFramework client;
     private AtomicInteger retries = new AtomicInteger(0);
@@ -33,7 +35,7 @@ public class Processor extends Lock {
     private String createdPath;
     private Semaphore restartLock = new Semaphore(1);
     private String nodePath;
-
+    private Long processID;
 
     public Processor(Cluster cluster, ConfigManager configManager){
         super(cluster.getBufferTime(), String.format("%s/process_lock", cluster.getClusterNodePath()));
@@ -88,7 +90,7 @@ public class Processor extends Lock {
         return createdPath;
     }
 
-    private void register(){
+    private synchronized void register(){
         try {
             createdPath = client.create()
                     .creatingParentsIfNeeded()
@@ -108,6 +110,8 @@ public class Processor extends Lock {
         }catch (Exception e){
             log.error("\t=== register:{} ===", e);
             client.close();
+        }finally {
+            //cluster.startProcessCache();
         }
     }
 
@@ -130,16 +134,16 @@ public class Processor extends Lock {
         }
     }
 
-    private void outputProcessID(){
+    private synchronized void outputProcessID(){
         try {
             Field pidField = process.getClass().getDeclaredField("pid");
             pidField.setAccessible(true);
-            Long pid = pidField.getLong(process);
+            processID = pidField.getLong(process);
             pidField.setAccessible(false);
-            log.info("\t=== process id:{} ===", pid);
+            log.info("\t=== process id:{} ===", processID);
 
             FileWriter writer = new FileWriter(PROCESS_PID_FILE);
-            writer.write(String.valueOf(pid));
+            writer.write(String.valueOf(processID));
             writer.close();
 
         }catch (Exception e){
@@ -155,9 +159,7 @@ public class Processor extends Lock {
 
     public void stop(String who){
         log.info("\t=== {} stop ===", who);
-        if(process !=null){
-            process.destroy();
-        }
+        destroy();
         if(client!=null) {
             try {
                 if(createdPath!=null) {
@@ -170,6 +172,21 @@ public class Processor extends Lock {
                 log.error("\t=== fail to delete:{} ===", e);
                 client.close();
             }
+        }
+    }
+
+    private synchronized void destroy(){
+        log.info("\t=== kill children process:{}  ===", processID);
+        if(processID!=null) {
+            try {
+                Process process = Runtime.getRuntime().exec(String.format("%s %s", configManager.getKill(), processID));
+                executorService.submit(new ProcessErrorMonitor(process));
+            } catch (Exception e) {
+                log.error("\t=== fail to destroy children processes:{} ===", e);
+            }
+        }
+        if(process!=null) {
+            process.destroy();
         }
     }
 

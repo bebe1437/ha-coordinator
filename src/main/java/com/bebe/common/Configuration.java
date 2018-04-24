@@ -238,4 +238,13 @@ class Configuration {
         return Integer.valueOf(getProperty("agent.retries", "3"));
     }
 
+    /**
+     * Retrieve command for kill children process.
+     *
+     * @return
+     */
+    public static String getKill() {
+        return getProperty("process.kill", "./kill.sh");
+    }
+
 }

@@ -19,8 +19,12 @@ public abstract class Lock {
 
     public abstract CuratorFramework getClient();
     protected abstract void process();
+    protected void before(){}
+    protected void after(){}
 
     public void start(){
+        before();
+
         log.info("\t=== start locking... ===");
 
         CuratorFramework client = getClient();
@@ -40,6 +44,7 @@ public abstract class Lock {
             }catch (Exception e){
                 log.debug("\t=== release lock:{} ===", e);
             }
+            after();
         }
     }
 }
