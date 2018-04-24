@@ -3,6 +3,8 @@ package com.bebe.curator.cluster;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.CuratorListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +43,12 @@ public class ClusterFactory {
                     .retryPolicy(retryPolicy)
                     .sessionTimeoutMs(sessionTimeout)
                     .build();
-            client.getConnectionStateListenable().addListener(new StateListener("cluster"));
+            client.getCuratorListenable().addListener(new CuratorListener() {
+                @Override
+                public void eventReceived(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception {
+                    LOG.info("{}", curatorEvent.toString());
+                }
+            });
             client.start();
             return new Cluster(this, client);
         }

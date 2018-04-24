@@ -4,6 +4,7 @@ import com.bebe.curator.cache.AgentCache;
 import com.bebe.curator.cache.ProcessCache;
 import com.bebe.curator.process.Processor;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -17,12 +18,15 @@ public class Cluster{
     private Processor processor;
     private AgentCache agentCache;
     private ProcessCache processCache;
+    private ConfigManager configManager;
     private Boolean isShutdown = false;
 
     private ClusterFactory.Builder builder;
     private String clusterNodePath;
     private String agentNodePath;
     private String processNodePath;
+
+    private ConnectionStateListener listener;
 
     public Cluster(ClusterFactory.Builder builder, CuratorFramework client){
         this.builder = builder;
@@ -31,12 +35,16 @@ public class Cluster{
         clusterNodePath = String.format("/%s", builder.getClusterName());
         agentNodePath = String.format("%s/agents", clusterNodePath);
         processNodePath = String.format("%s/processes", clusterNodePath);
+
+        listener = new StateListener("cluster", this);
     }
 
     public void start(){
+        client.getConnectionStateListenable().addListener(listener);
+
         createAgentNode();
 
-        ConfigManager configManager = new ConfigManager(this);
+        configManager = new ConfigManager(this);
         processor = new Processor(this, configManager);
         configManager.init();
 
@@ -151,5 +159,13 @@ public class Cluster{
 
     public long getBufferTime(){
         return builder.getBufferTime();
+    }
+
+    public void restart(){
+        processor.stop("restart");
+        configManager.stop();
+        CloseableUtils.closeQuietly(processCache);
+        CloseableUtils.closeQuietly(agentCache);
+        start();
     }
 }

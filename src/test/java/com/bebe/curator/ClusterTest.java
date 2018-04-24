@@ -7,6 +7,7 @@ import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.curator.test.KillSession;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.utils.CloseableUtils;
 import org.junit.After;
@@ -45,6 +46,7 @@ public class ClusterTest {
     @After
     public void destroy(){
         client.close();
+        Sleep.start();
     }
 
 
@@ -425,6 +427,74 @@ public class ClusterTest {
         }
 
         cluster1.shutdown("test");
+        CloseableUtils.closeQuietly(server);
+    }
+
+    /**
+     * maxProcessors: 1
+     * start one agents,
+     * check if there are one processor running.
+     * */
+    @Test
+    public void test06_sessionExpired(){
+        int maxProcessors = 1;
+        String agentName = "agentTest01";
+
+        Cluster cluster = ClusterFactory.builder()
+                .setClusterName(CLUSTER_NAME)
+                .setAgentName(agentName)
+                .setZkHost(server.getConnectString())
+                .setSessionTimeout(SESSION_TIMEOUT)
+                .setMaxProcessors(maxProcessors)
+                .setMaxRetries(RETRIES)
+                .setCommand("top")
+                .build();
+        cluster.start();
+
+        Sleep.start();
+
+        List<String> processes = null;
+        List<String> agents = null;
+        String process = null;
+        try{
+            processes = client.getChildren().forPath(cluster.getProcessNodePath());
+            agents = client.getChildren().forPath(cluster.getAgentNodePath());
+            process = processes.get(0);
+        }catch (Exception e){
+            e.printStackTrace();
+            Assert.assertNull(e);
+        }
+
+
+        System.err.println("kill session");
+        try {
+            KillSession.kill(cluster.getClient().getZookeeperClient().getZooKeeper(), server.getConnectString());
+        }catch (Exception e){
+            e.printStackTrace();
+            Assert.assertNull(e);
+        }
+
+        Sleep.start();
+        Sleep.start();
+
+
+        System.err.println("getChildren");
+        try{
+            processes = client.getChildren().forPath(cluster.getProcessNodePath());
+            agents = client.getChildren().forPath(cluster.getAgentNodePath());
+        }catch (Exception e){
+            e.printStackTrace();
+            Assert.assertNull(e);
+        }
+
+        Assert.assertEquals(maxProcessors, processes.size());
+        Assert.assertEquals(1, agents.size());
+        Assert.assertTrue(agents.get(0).endsWith(agentName));
+        Assert.assertTrue(processes.get(0).endsWith(agentName));
+        Assert.assertTrue(!process.equals(processes.get(0)));
+
+        cluster.shutdown("Test");
+
         CloseableUtils.closeQuietly(server);
     }
 }

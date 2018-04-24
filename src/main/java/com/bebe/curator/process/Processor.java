@@ -45,7 +45,7 @@ public class Processor extends Lock {
     }
 
     @Override
-    protected CuratorFramework getClient() {
+    public CuratorFramework getClient() {
         if(client!=null && client.getZookeeperClient().isConnected()){
             return client;
         }else {
@@ -56,7 +56,7 @@ public class Processor extends Lock {
                     .retryPolicy(retryPolicy)
                     .sessionTimeoutMs(cluster.getSessionTimeout())
                     .build();
-            client.getConnectionStateListenable().addListener(new StateListener("proccess-" + seq.incrementAndGet()));
+            client.getConnectionStateListenable().addListener(new StateListener("proccess-" + seq.incrementAndGet(), this));
             client.start();
             this.client = client;
             return client;

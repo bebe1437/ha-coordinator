@@ -17,7 +17,7 @@ public abstract class Lock {
         this.bufferTIme = bufferTime;
     }
 
-    protected abstract CuratorFramework getClient();
+    public abstract CuratorFramework getClient();
     protected abstract void process();
 
     public void start(){

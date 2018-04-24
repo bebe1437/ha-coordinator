@@ -4,6 +4,7 @@ import com.bebe.common.ClusterConfig;
 import com.bebe.curator.cache.ConfCache;
 import com.google.gson.Gson;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -41,7 +42,7 @@ public class ConfigManager extends Lock {
     }
 
     @Override
-    protected CuratorFramework getClient() {
+    public CuratorFramework getClient() {
         return client;
     }
 
@@ -50,7 +51,7 @@ public class ConfigManager extends Lock {
     }
 
     public void stop(){
-        confCache.stop();
+        CloseableUtils.closeQuietly(confCache);
     }
 
     public synchronized int getMaxProcessors(){
