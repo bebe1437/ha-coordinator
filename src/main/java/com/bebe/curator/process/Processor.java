@@ -26,7 +26,7 @@ public class Processor extends Lock {
 
     private Cluster cluster;
     private Process process;
-    private ExecutorService executorService = Executors.newFixedThreadPool(4);
+    private ExecutorService executorService = Executors.newFixedThreadPool(10);
     private ConfigManager configManager;
     private CuratorFramework client;
     private AtomicInteger retries = new AtomicInteger(0);
@@ -157,7 +157,7 @@ public class Processor extends Lock {
         executorService.submit(new ProcessErrorMonitor(process));
     }
 
-    public void stop(String who){
+    public synchronized void stop(String who){
         log.info("\t=== {} stop ===", who);
         destroy();
         if(client!=null) {
@@ -178,14 +178,29 @@ public class Processor extends Lock {
     private synchronized void destroy(){
         log.info("\t=== kill children process:{}  ===", processID);
         if(processID!=null) {
+            Process killer = null;
             try {
-                Process process = Runtime.getRuntime().exec(String.format("%s %s", configManager.getKill(), processID));
-                executorService.submit(new ProcessErrorMonitor(process));
+                String command = String.format("%s %s", configManager.getKill(), processID);
+                log.debug("{}", command);
+                killer = Runtime.getRuntime().exec(command);
+                executorService.submit(new ProcessInfoMonitor(killer));
+                executorService.submit(new ProcessErrorMonitor(killer));
             } catch (Exception e) {
                 log.error("\t=== fail to destroy children processes:{} ===", e);
             }
+
+            //make sure killer finish.
+            if(killer!=null){
+                while (true) {
+                    try {
+                        killer.exitValue();
+                        break;
+                    }catch (Exception e){}
+                }
+            }
         }
         if(process!=null) {
+            log.info("\t=== kill process. ===");
             process.destroy();
         }
     }

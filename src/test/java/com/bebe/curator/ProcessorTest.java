@@ -113,6 +113,8 @@ public class ProcessorTest {
 
         Sleep.start();
         Sleep.start();
+        Sleep.start();
+        Sleep.start();
 
         try{
             processes = client.getChildren().forPath(cluster.getProcessNodePath());
