@@ -25,7 +25,7 @@ public abstract class Lock {
     public void start(){
         before();
 
-        log.info("\t=== start locking... ===");
+        log.info("\t=== acquire lock: {} ===", lockPath);
 
         CuratorFramework client = getClient();
 
@@ -40,7 +40,7 @@ public abstract class Lock {
         }finally {
             try {
                 lock.release();
-                log.info("\t=== release lock ===");
+                log.info("\t=== release lock: {} ===", lockPath);
             }catch (Exception e){
                 log.debug("\t=== release lock:{} ===", e);
             }

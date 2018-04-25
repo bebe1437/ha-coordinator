@@ -302,6 +302,7 @@ public class ClusterTest {
         Assert.assertTrue(processes.get(0).endsWith(agentName1) || processes.get(0).endsWith(agentName2));
 
         //shutdown cluster
+        System.out.println("shutdown cluster");
         String processAgent = null;
         if(processes.get(0).endsWith(agentName1)){
             cluster1.shutdown("test");
@@ -313,7 +314,10 @@ public class ClusterTest {
 
         Sleep.start();
         Sleep.start();
+        Sleep.start();
+        Sleep.start();
 
+        System.out.println("getChildren");
         try{
             processes = client.getChildren().forPath(cluster1.getProcessNodePath());
             agents = client.getChildren().forPath(cluster1.getAgentNodePath());
@@ -374,9 +378,9 @@ public class ClusterTest {
             List<String> processes = client.getChildren().forPath(cluster1.getProcessNodePath());
             List<String> agents = client.getChildren().forPath(cluster1.getAgentNodePath());
 
-            System.err.println("cluster1, cluster2 start.");
-            System.err.println(processes);
-            System.err.println(agents);
+            System.out.println("cluster1, cluster2 start.");
+            System.out.println(processes);
+            System.out.println(agents);
         }catch (Exception e){
             e.printStackTrace();
             Assert.assertNull(e);
@@ -389,16 +393,16 @@ public class ClusterTest {
             List<String> processes = client.getChildren().forPath(cluster1.getProcessNodePath());
             List<String> agents = client.getChildren().forPath(cluster1.getAgentNodePath());
 
-            System.err.println("cluster1 shutdown.");
-            System.err.println(processes);
-            System.err.println(agents);
+            System.out.println("cluster1 shutdown.");
+            System.out.println(processes);
+            System.out.println(agents);
         }catch (Exception e){
             e.printStackTrace();
             Assert.assertNull(e);
         }
 
 
-        System.err.println("cluster1 start.");
+        System.out.println("cluster1 start.");
         cluster1 = ClusterFactory.builder()
                 .setClusterName(CLUSTER_NAME)
                 .setAgentName(agentName1)
@@ -415,8 +419,8 @@ public class ClusterTest {
             List<String> agents = client.getChildren().forPath(cluster1.getAgentNodePath());
 
 
-            System.err.println(processes);
-            System.err.println(agents);
+            System.out.println(processes);
+            System.out.println(agents);
         }catch (Exception e){
             e.printStackTrace();
             Assert.assertNull(e);
@@ -428,9 +432,9 @@ public class ClusterTest {
             List<String> processes = client.getChildren().forPath(cluster1.getProcessNodePath());
             List<String> agents = client.getChildren().forPath(cluster1.getAgentNodePath());
 
-            System.err.println("cluster2 shutdown.");
-            System.err.println(processes);
-            System.err.println(agents);
+            System.out.println("cluster2 shutdown.");
+            System.out.println(processes);
+            System.out.println(agents);
         }catch (Exception e){
             e.printStackTrace();
             Assert.assertNull(e);
@@ -478,7 +482,7 @@ public class ClusterTest {
         }
 
 
-        System.err.println("kill session");
+        System.out.println("kill session");
         try {
             KillSession.kill(cluster.getClient().getZookeeperClient().getZooKeeper(), server.getConnectString());
         }catch (Exception e){
@@ -488,7 +492,7 @@ public class ClusterTest {
 
         Sleep.start();
 
-        System.err.println("getChildren");
+        System.out.println("getChildren");
         try{
             processes = client.getChildren().forPath(cluster.getProcessNodePath());
             agents = client.getChildren().forPath(cluster.getAgentNodePath());

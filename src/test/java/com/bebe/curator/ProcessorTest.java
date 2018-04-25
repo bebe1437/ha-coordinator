@@ -98,7 +98,7 @@ public class ProcessorTest {
         try{
             processes = client.getChildren().forPath(cluster.getProcessNodePath());
             process = processes.get(0);
-            System.err.println(processes);
+            System.out.println(processes);
         }catch (Exception e){
             e.printStackTrace();
             Assert.assertNull(e);
@@ -118,7 +118,7 @@ public class ProcessorTest {
 
         try{
             processes = client.getChildren().forPath(cluster.getProcessNodePath());
-            System.err.println(processes);
+            System.out.println(processes);
             Assert.assertEquals(1, processes.size());
             Assert.assertTrue(!process.equals(processes.get(0)));
         }catch (Exception e){

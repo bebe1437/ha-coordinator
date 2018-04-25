@@ -10,4 +10,4 @@ fi
 
 java -Dconfig.resource=$config \
 -Dlogback.root.level=INFO \
--jar start.jar & echo $! >$pidfile.tmp
+-jar ha-coordinator.jar & echo $! >$pidfile.tmp

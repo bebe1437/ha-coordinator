@@ -38,7 +38,7 @@ public class Processor extends Lock {
     private Long processID;
 
     public Processor(Cluster cluster, ConfigManager configManager){
-        super(cluster.getBufferTime(), String.format("%s/process_lock", cluster.getClusterNodePath()));
+        super(cluster.getBufferTime(), String.format("%s_lock", cluster.getProcessNodePath()));
         log.info("createProcessor");
 
         this.cluster = cluster;
@@ -176,8 +176,8 @@ public class Processor extends Lock {
     }
 
     private synchronized void destroy(){
-        log.info("\t=== kill children process:{}  ===", processID);
         if(processID!=null) {
+            log.info("\t=== kill children process:{}  ===", processID);
             Process killer = null;
             try {
                 String command = String.format("%s %s", configManager.getKill(), processID);
@@ -201,7 +201,9 @@ public class Processor extends Lock {
         }
         if(process!=null) {
             log.info("\t=== kill process. ===");
+            processID = null;
             process.destroy();
+            process = null;
         }
     }
 
