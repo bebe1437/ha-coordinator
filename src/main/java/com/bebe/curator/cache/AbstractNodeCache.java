@@ -1,44 +1,41 @@
 package com.bebe.curator.cache;
 
+import com.bebe.common.Constants;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.NodeCache;
 import org.apache.curator.framework.recipes.cache.NodeCacheListener;
+import org.apache.curator.utils.CloseableUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class AbstractNodeCache extends NodeCache{
+import java.nio.charset.Charset;
+
+public abstract class AbstractNodeCache extends NodeCache implements com.bebe.curator.cache.NodeCache{
     protected Logger log = LoggerFactory.getLogger(getClass());
-    protected String data = "";
+    protected Charset charset = Constants.UTF8;
 
     public AbstractNodeCache(CuratorFramework client, String path){
         super(client, path);
     }
 
-    public void start() throws Exception{
+    @Override
+    public void listen() throws Exception{
         super.start();
         this.getListenable().addListener(new NodeCacheListener() {
             @Override
             public void nodeChanged() throws Exception {
                 log.info("\t=== nodeChanged. ===");
-                synchronized (data){
-                    if(getCurrentData()!=null){
-                        process(getCurrentData().getData());
-                    }else{
-                        remove();
-                    }
+                if(getCurrentData()!=null){
+                    process(getCurrentData().getData());
+                }else{
+                    remove();
                 }
             }
         });
     }
 
     public void stop(){
-        try {
-            close();
-        }catch (Exception e){
-            log.error("\t=== stop:{} ===", e);
-        }
+        CloseableUtils.closeQuietly(this);
     }
 
-    protected abstract void process(byte[] data);
-    protected abstract void remove();
 }

@@ -1,26 +1,27 @@
 package com.bebe.curator.cache;
 
-import com.bebe.curator.cluster.ConfigManager;
-import org.apache.curator.framework.CuratorFramework;
-
-import java.nio.charset.Charset;
+import com.bebe.common.Constants;
+import com.bebe.curator.cluster.Cluster;
+import com.bebe.curator.node.ConfNode;
 
 public class ConfCache extends AbstractNodeCache{
 
-    private ConfigManager configManager;
+    private ConfNode confNode;
+    private Cluster cluster;
 
-    public ConfCache(CuratorFramework client, ConfigManager configManager){
-        super(client, configManager.getConfNodePath());
-        this.configManager = configManager;
+    public ConfCache(Cluster cluster, ConfNode confNode){
+        super(cluster.getClient(), cluster.getConfNodePath());
+        this.confNode = confNode;
+        this.cluster = cluster;
     }
 
     @Override
-    protected void process(byte[] data) {
-        configManager.setUp(new String(data, Charset.forName("UTF-8")));
+    public void process(byte[] data) {
+        confNode.update(new String(data, Constants.UTF8));
     }
 
     @Override
-    protected void remove() {
-        log.warn("\t=== {} was removed. ===", configManager.getConfNodePath());
+    public void remove() {
+        log.warn("\t=== {} was removed. ===", cluster.getConfNodePath());
     }
 }

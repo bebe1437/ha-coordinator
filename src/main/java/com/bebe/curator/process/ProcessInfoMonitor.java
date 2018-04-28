@@ -1,5 +1,6 @@
 package com.bebe.curator.process;
 
+import com.bebe.common.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,7 +19,7 @@ public class ProcessInfoMonitor implements Runnable{
 
     public void run() {
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), Constants.UTF8));
             String line;
             while (reader.ready() && (line = reader.readLine()) != null) {
                 LOG.error(line);

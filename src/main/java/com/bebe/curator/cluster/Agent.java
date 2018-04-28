@@ -31,7 +31,7 @@ public class Agent {
                     //.withProtection()
                     .withMode(CreateMode.EPHEMERAL)
                     .forPath(nodePath);
-            cluster.startProcess();
+            //cluster.startProcess();
         }catch (KeeperException.NodeExistsException e){
             int retry = retries.incrementAndGet();
             if(retry<cluster.getMaxRetries()){

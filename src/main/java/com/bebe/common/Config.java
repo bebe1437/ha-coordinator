@@ -2,7 +2,7 @@ package com.bebe.common;
 
 import com.google.gson.annotations.SerializedName;
 
-public class ClusterConfig {
+public class Config {
 
     @SerializedName("p.cmd")
     private String command;
@@ -15,7 +15,7 @@ public class ClusterConfig {
         return command;
     }
 
-    public ClusterConfig setCommand(String command) {
+    public Config setCommand(String command) {
         this.command = command;
         return this;
     }
@@ -24,7 +24,7 @@ public class ClusterConfig {
         return maxProcessors;
     }
 
-    public ClusterConfig setMaxProcessors(int maxProcessors) {
+    public Config setMaxProcessors(int maxProcessors) {
         this.maxProcessors = maxProcessors;
         return this;
     }
@@ -33,7 +33,7 @@ public class ClusterConfig {
         return kill;
     }
 
-    public ClusterConfig setKill(String kill) {
+    public Config setKill(String kill) {
         this.kill = kill;
         return this;
     }

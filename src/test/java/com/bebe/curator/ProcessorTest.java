@@ -1,12 +1,10 @@
 package com.bebe.curator;
 
-import com.bebe.common.ClusterConfig;
+import com.bebe.common.Config;
 import com.bebe.common.Sleep;
 import com.bebe.curator.cluster.Cluster;
 import com.bebe.curator.cluster.ClusterFactory;
-import com.bebe.curator.cluster.ConfigManager;
 import com.bebe.curator.process.Processor;
-import com.google.gson.Gson;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -18,6 +16,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.util.List;
 
@@ -64,7 +63,7 @@ public class ProcessorTest {
         int maxProcessors = 1;
         String agentName = "agentTest01";
 
-        Cluster cluster = ClusterFactory.builder()
+        ClusterFactory.Builder builder = ClusterFactory.builder()
                 .setClusterName(CLUSTER_NAME)
                 .setAgentName(agentName)
                 .setZkHost(server.getConnectString())
@@ -72,16 +71,23 @@ public class ProcessorTest {
                 .setMaxProcessors(maxProcessors)
                 .setMaxRetries(RETRIES)
                 .setCommand("top")
-                .setKill(KILL)
-                .build();
-
-        ClusterConfig clusterConfig = new ClusterConfig()
-                .setMaxProcessors(maxProcessors)
-                .setCommand("top")
                 .setKill(KILL);
-        ConfigManager configManager = new ConfigManager(cluster);
-        configManager.setUp(new Gson().toJson(clusterConfig));
-        Processor processor = new Processor(cluster, configManager);
+        //Cluster cluster = builder.build();
+        Cluster cluster = Mockito.mock(Cluster.class);
+        Mockito.when(cluster.getConf()).thenReturn(
+                new Config().setCommand(builder.getCommand())
+                .setKill(builder.getKill())
+                .setMaxProcessors(builder.getMaxProcessors())
+        );
+        Mockito.when(cluster.getBuilder()).thenReturn(builder);
+        Mockito.when(cluster.getProcessNodePath()).thenReturn(String.format("/%s/processes", CLUSTER_NAME));
+        Mockito.when(cluster.getZKHost()).thenReturn(builder.getZkHost());
+        Mockito.when(cluster.getSessionTimeout()).thenReturn(builder.getSessionTimeout());
+        Mockito.when(cluster.getAgentName()).thenReturn(builder.getAgentName());
+        Mockito.when(cluster.getBufferTime()).thenReturn(builder.getBufferTime());
+        Mockito.when(cluster.getMaxRetries()).thenReturn(builder.getMaxRetries());
+
+        Processor processor = new Processor(cluster);
 
         try {
             client.create().creatingParentsIfNeeded().forPath(cluster.getProcessNodePath());
@@ -90,20 +96,22 @@ public class ProcessorTest {
             Assert.assertNull(e);
         }
 
-        processor.start();
+        System.out.println("Start");
+        processor.start(builder.getCommand());
+        Sleep.start();
         Sleep.start();
 
         List<String> processes = null;
-        String process = null;
         try{
             processes = client.getChildren().forPath(cluster.getProcessNodePath());
-            process = processes.get(0);
+            Assert.assertEquals(1, processes.size());
             System.out.println(processes);
         }catch (Exception e){
             e.printStackTrace();
             Assert.assertNull(e);
         }
 
+        System.out.println("kill");
         try {
             KillSession.kill(processor.getClient().getZookeeperClient().getZooKeeper(), server.getConnectString());
         }catch (Exception e){
@@ -113,14 +121,11 @@ public class ProcessorTest {
 
         Sleep.start();
         Sleep.start();
-        Sleep.start();
-        Sleep.start();
 
         try{
             processes = client.getChildren().forPath(cluster.getProcessNodePath());
             System.out.println(processes);
             Assert.assertEquals(1, processes.size());
-            Assert.assertTrue(!process.equals(processes.get(0)));
         }catch (Exception e){
             e.printStackTrace();
             Assert.assertNull(e);

@@ -3,8 +3,6 @@ package com.bebe.curator.process;
 
 import com.bebe.common.Sleep;
 import com.bebe.curator.cluster.Cluster;
-import com.bebe.curator.cluster.ConfigManager;
-import com.bebe.curator.cluster.Lock;
 import com.bebe.curator.cluster.StateListener;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
@@ -12,41 +10,37 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class Processor extends Lock {
+public class Processor{
+    private static final Logger LOG = LoggerFactory.getLogger(Processor.class);
     private static final String PROCESS_PID_FILE = "process.pid";
 
     private Cluster cluster;
     private Process process;
     private ExecutorService executorService = Executors.newFixedThreadPool(10);
-    private ConfigManager configManager;
     private CuratorFramework client;
     private AtomicInteger retries = new AtomicInteger(0);
     private AtomicInteger seq = new AtomicInteger(0);
 
-    private String createdPath;
     private Semaphore restartLock = new Semaphore(1);
     private String nodePath;
     private Long processID;
 
-    public Processor(Cluster cluster, ConfigManager configManager){
-        super(cluster.getBufferTime(), String.format("%s_lock", cluster.getProcessNodePath()));
-        log.info("createProcessor");
-
+    public Processor(Cluster cluster){
         this.cluster = cluster;
-        this.configManager = configManager;
         nodePath = String.format("%s/%s", cluster.getProcessNodePath(), cluster.getAgentName());
     }
 
-    @Override
     public CuratorFramework getClient() {
         if(client!=null && client.getZookeeperClient().isConnected()){
             return client;
@@ -58,78 +52,50 @@ public class Processor extends Lock {
                     .retryPolicy(retryPolicy)
                     .sessionTimeoutMs(cluster.getSessionTimeout())
                     .build();
-            client.getConnectionStateListenable().addListener(new StateListener("proccess-" + seq.incrementAndGet(), this));
+            client.getConnectionStateListenable().addListener(
+                    new StateListener("proccess-" + seq.incrementAndGet(), cluster, this));
             client.start();
             this.client = client;
             return client;
         }
     }
 
-    @Override
-    protected void process() {
-        try {
-            List<String> processes = client.getChildren().forPath(cluster.getProcessNodePath());
-            int max = configManager.getMaxProcessors();
-            if (processes.size() < max) {
-                if (!processes.contains(cluster.getAgentName())) {
-                    register();
-                }
-            } else if (processes.size() > max) {
-                if (processes.contains(cluster.getAgentName())) {
-                    log.info("\t=== Alive processors reach maximum:{} ===", max);
-                    stop("process-reach maximum");
-                }
-            }
-        }catch (Exception e){
-            log.error("\t=== fail to retrieve children:{} ===", e);
-            stop("process-exception");
-        }
+    public synchronized Long getProcessID(){
+        return processID;
     }
 
-    public synchronized String getCreatedPath(){
-        return createdPath;
-    }
-
-    private synchronized void register(){
+    public void start(String command){
         try {
-            createdPath = client.create()
+            getClient().create()
                     .creatingParentsIfNeeded()
-                    .withProtection()
                     .withMode(CreateMode.EPHEMERAL)
                     .forPath(nodePath);
-            runProcess();
+            runProcess(command);
         }catch (KeeperException.NodeExistsException e){
             int retry = retries.incrementAndGet();
             if(retry<cluster.getMaxRetries()){
-                log.error("\t=== Retry to register process:{}. ===", nodePath);
-                register();
+                LOG.error("\t=== Retry to register process:{}. ===", nodePath);
+                start(command);
             }else{
-                log.error("\t=== Duplicated Process:{} registered. ===", nodePath);
+                LOG.error("\t=== Duplicated Process:{} registered. ===", nodePath);
                 client.close();
             }
         }catch (Exception e){
-            log.error("\t=== register:{} ===", e);
-            client.close();
+            LOG.error("\t=== start:{} ===", e);
+            stop("start");
         }finally {
             //cluster.startProcessCache();
         }
     }
 
-    private void runProcess(){
-        if(configManager == null){
-            log.info("\t=== configManager not ready. ===");
-            Sleep.start();
-            runProcess();
-            return;
-        }
-        String command = configManager.getCommand();
+    private synchronized void runProcess(String command){
         try {
-            log.info("\t=== exec command:{} ===", command);
+            LOG.info("\t=== exec command:{} ===", command);
             process = Runtime.getRuntime().exec(command);
             outputProcessID();
             startMonitor();
         }catch (IOException e){
-            log.error("\t=== Fail to start process:{}. ===", e);
+            LOG.error("\t=== Fail to start process:{}. ===", e);
            client.close();
         }
     }
@@ -140,53 +106,58 @@ public class Processor extends Lock {
             pidField.setAccessible(true);
             processID = pidField.getLong(process);
             pidField.setAccessible(false);
-            log.info("\t=== process id:{} ===", processID);
+            LOG.info("\t=== process id:{} ===", processID);
 
             FileWriter writer = new FileWriter(PROCESS_PID_FILE);
             writer.write(String.valueOf(processID));
             writer.close();
 
         }catch (Exception e){
-            log.error("\t=== outputProcessID:{} ===", e);
+            LOG.error("\t=== outputProcessID:{} ===", e);
             stop("outputProcessID");
         }
     }
 
-    private void startMonitor(){
+    private synchronized void startMonitor(){
         executorService.submit(new ProcessStatusMonitor(this, process));
         executorService.submit(new ProcessErrorMonitor(process));
     }
 
     public synchronized void stop(String who){
-        log.info("\t=== {} stop ===", who);
+        LOG.info("\t=== {} stop ===", who);
         destroy();
         if(client!=null) {
             try {
-                if(createdPath!=null) {
-                    synchronized (createdPath) {
-                        client.delete().guaranteed().forPath(createdPath);
-                    }
+                if(processID!=null) {
+                    client.delete().guaranteed().forPath(nodePath);
                 }
             }catch (KeeperException.NoNodeException e){
             }catch (Exception e){
-                log.error("\t=== fail to delete:{} ===", e);
+                LOG.error("\t=== fail to delete:{} ===", e);
                 client.close();
             }
+        }
+
+        if(process!=null) {
+            LOG.info("\t=== kill process. ===");
+            processID = null;
+            process.destroy();
+            process = null;
         }
     }
 
     private synchronized void destroy(){
         if(processID!=null) {
-            log.info("\t=== kill children process:{}  ===", processID);
+            LOG.info("\t=== kill children process:{}  ===", processID);
             Process killer = null;
             try {
-                String command = String.format("%s %s", configManager.getKill(), processID);
-                log.debug("{}", command);
+                String command = String.format("%s %s", cluster.getConf().getKill(), processID);
+                LOG.debug("{}", command);
                 killer = Runtime.getRuntime().exec(command);
                 executorService.submit(new ProcessInfoMonitor(killer));
                 executorService.submit(new ProcessErrorMonitor(killer));
             } catch (Exception e) {
-                log.error("\t=== fail to destroy children processes:{} ===", e);
+                LOG.error("\t=== fail to destroy children processes:{} ===", e);
             }
 
             //make sure killer finish.
@@ -199,24 +170,18 @@ public class Processor extends Lock {
                 }
             }
         }
-        if(process!=null) {
-            log.info("\t=== kill process. ===");
-            processID = null;
-            process.destroy();
-            process = null;
-        }
     }
 
-    public void restart(String who){
+    public void restart(String who, String command){
         try {
             restartLock.acquire();
             //sleep for a while in case restart too often
             Sleep.start();
             stop(who + "-restart");
-            start();
+            start(command);
         }catch (Exception e){
-            log.error("\t=== restart:{} ===", e);
-            restart(who);
+            LOG.error("\t=== restart:{} ===", e);
+            restart(who, command);
         }finally{
             restartLock.release();
         }

@@ -165,7 +165,7 @@ class Configuration {
      * @return
      */
     public static int getSessionTimeout() {
-        return Integer.valueOf(getProperty("timeout", "15000"));
+        return Integer.parseInt(getProperty("timeout", "15000"));
     }
 
     /**
@@ -202,7 +202,7 @@ class Configuration {
      * @return
      */
     public static int getMaximunProcessors() {
-        return Integer.valueOf(getProperty("processors.maximum", "1"));
+        return Integer.parseInt(getProperty("processors.maximum", "1"));
     }
 
     /**
@@ -226,7 +226,7 @@ class Configuration {
      * @return
      */
     public static long getBufferTime() {
-        return Long.valueOf(getProperty("buffer.time", "3000"));
+        return Long.parseLong(getProperty("buffer.time", "3000"));
     }
 
     /**
@@ -235,7 +235,7 @@ class Configuration {
      * @return
      */
     public static int getRetries() {
-        return Integer.valueOf(getProperty("agent.retries", "3"));
+        return Integer.parseInt(getProperty("agent.retries", "3"));
     }
 
     /**

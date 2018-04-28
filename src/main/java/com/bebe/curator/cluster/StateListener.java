@@ -13,17 +13,14 @@ public class StateListener implements ConnectionStateListener {
     private Cluster cluster;
     private Processor processor;
 
-    public StateListener(String name){
-        this.name = name;
-    }
-
     public StateListener(String name, Cluster cluster){
         this.name = name;
         this.cluster = cluster;
     }
 
-    public StateListener(String name, Processor processor){
+    public StateListener(String name, Cluster cluster, Processor processor){
         this.name = name;
+        this.cluster = cluster;
         this.processor = processor;
     }
 
@@ -32,7 +29,7 @@ public class StateListener implements ConnectionStateListener {
         log.info(String.format("%s:%s", name, connectionState));
         if(connectionState == ConnectionState.LOST){
             log.error("\t=== lost connection. ===");
-            if(cluster!=null) {
+            if(cluster!=null && processor==null) {
                 int count = 0;
                 while (true) {
                     try {
@@ -49,19 +46,21 @@ public class StateListener implements ConnectionStateListener {
                 }
             }
 
-            if(processor!=null){
+            if(processor!=null && processor.getProcessID()!=null){
                 int count = 0;
                 while (true) {
                     try {
                         if (curatorFramework.getZookeeperClient().blockUntilConnectedOrTimedOut()) {
                             log.info("\t=== processor restart:{} ===", ++count);
-                            processor.restart("lost-connection");
+                            processor.restart("lost-connection", cluster.getConf().getCommand());
                             break;
                         }
                     } catch (InterruptedException e) {
+                        log.error("{}", e);
                         break;
                     } catch (Exception e) {
-
+                        log.error("{}", e);
+                        break;
                     }
                 }
             }
