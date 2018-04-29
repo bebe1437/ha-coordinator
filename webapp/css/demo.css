@@ -1,0 +1,130 @@
+
+body {
+  font-family: 'Roboto', sans-serif;
+  color: #496174;
+  background: #fff;
+  font-size: 14px;
+  line-height: 22px;
+  overflow-x:hidden;
+}
+
+/* Demo Only */
+
+.logo {
+  font-weight: 500;
+  font-size: 30px;
+  padding-top: 10px !important;
+  color: #ffffff !important;
+  letter-spacing: 1px;
+  padding-top: 12px;
+  font-family: 'Pacifico', cursive;
+  text-decoration: none !important;
+}
+
+.logo span{
+  font-size: 18px;
+  height: 32px;
+  line-height: 32px;
+  width: 32px;
+  color: #2f3e47;
+  padding: 0px 8px;
+  text-align: center;
+  border-radius: 50%;
+  background-color: #ffffff !important;
+  display: inline-block;
+}
+
+.btn-white-fill {
+  padding: 8px 24px !important;
+  background-color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.75) !important;
+  color: #2f3e47 !important;
+  border-radius: 50px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.btn-white-fill:hover {
+  border: 2px solid rgba(255, 255, 255, 0.75) !important;
+  background-color: transparent;
+  color: #ffffff !important;
+}
+
+.home-demo {
+  padding-top: 60px;
+  padding-bottom: 80px;
+  background: #6441A5;
+  background: -webkit-linear-gradient(to left, #185a9d, #6441A5);
+  background: linear-gradient(to left, #185a9d, #6441A5);
+  margin-bottom: 50px;
+}
+
+.home-wrapper p {
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 50px;
+}
+
+.home-wrapper h2 {
+  color: #ffffff;
+  margin-top: 50px;
+  font-weight: 300;
+  margin-bottom: 50px;
+}
+
+.demo-box {
+  padding: 20px 0 30px 0; 
+  text-align: center;
+}
+
+.demo-box:hover img {
+    border: 7px solid #ddd;
+}
+.demo-box img {
+    width: 100%;
+    height: auto;
+    position: relative;
+    top: 0;
+    border: 7px solid #eee;
+    -webkit-transition: all 400ms ease-in-out;
+       -moz-transition: all 400ms ease-in-out;
+         -o-transition: all 400ms ease-in-out;
+            transition: all 400ms ease-in-out;
+}
+
+.demo-box h4 {
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-top: 20px;
+}
+
+.footer {
+  margin-top: 50px;
+  padding: 20px 0px;
+  background-color: #2f3e47;
+}
+
+.copyright,.text-link {
+    color: rgba(255,255,255,0.7) !important;
+    margin: 0px;
+}
+
+.border {
+    height: 4px;
+    width: 60px;
+    border-radius: 5px;
+    margin: 0 auto 30px;
+    background: #6441A5;
+    background: -webkit-linear-gradient(to left, #185a9d, #6441A5);
+    background: linear-gradient(to left, #185a9d, #6441A5);
+}
+
+.title {
+  margin-bottom: 15px;
+    font-size: 22px;
+}
+
+.demo-2 {
+  padding-top: 70px;
+}
+

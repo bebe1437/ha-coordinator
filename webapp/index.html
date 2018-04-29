@@ -1,0 +1,92 @@
+<html>
+  <head>
+  	<meta charset="utf-8">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+
+	<!-- Bootstrap core CSS
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+
+    <link href="/css/icons.css" rel="stylesheet">
+
+    <!-- Custom styles for this template 
+    <link href="/css/demo.css" rel="stylesheet">   
+     --> 
+  </head>
+  <body>
+  
+	<div ng-app="clusterApp" ng-controller="clusterCtrl">
+		<div>
+  		<h2>HA Coordiantor</h4>
+        <h1>Cluster Name: {{cluster}}</h1>
+        <h2>master: {{master}}</h2>
+        <div class="border"></div>            
+    	</div>
+		<table>
+			<tr>
+				<th> <h2>Configuration</h2> </th>
+				<th> <h2>Agents</h2></th>
+			</tr>
+			<tr>
+				<td>
+					<ul>
+		    			<li ng-repeat="(key, value) in conf">{{key}}：{{value}}</li>
+					</ul>
+				</td>
+				<td>
+					<ul>
+		    			<li ng-repeat="agent in agents">
+		    				{{agent.agent}}：{{agent.chosen && agent.running
+		    				? "running"
+		    				: agent.chosen && !agent.running
+		    				? "waitting"
+		    				: "idle" }}
+		    			</li>
+					</ul>
+				</td>
+			</tr>
+		</table>
+	</div>
+
+	<script>
+	var app = angular.module('clusterApp', []);
+	var socket = io.connect('http://localhost:5000');
+
+	app.controller('clusterCtrl', function($scope) {
+		$scope.agents = [];
+		$scope.processes = [];
+		$scope.conf = {};
+		$scope.cluster="";
+		$scope.master="";
+
+		socket.on('cluster', function(data){
+			console.log(data);
+			console.log(data.cluster);
+			$scope.$apply(function() { 
+				$scope.cluster = data.cluster; 
+				$scope.master = data.master; 
+			});
+		});
+		socket.on('znode:agents', function(data){
+			console.log(data);
+			$scope.$apply(function() { $scope.agents = data; });
+		});
+		socket.on('znode:agent', function(data){
+			console.log(data);
+			$scope.$apply(function() { $scope.agents = data; });
+		});
+		socket.on('znode:process', function(data){
+			console.log(data);
+			console.log(data.process);
+			$scope.$apply(function() { $scope.processes = data.process; });
+		});
+		socket.on('znode:conf', function(data){
+			console.log(data);
+			console.log(data.conf);
+			$scope.$apply(function() { $scope.conf = data.conf; });
+		});
+	});
+	</script>
+
+  </body>
+</html>
