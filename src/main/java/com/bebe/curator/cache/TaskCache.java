@@ -28,6 +28,7 @@ public class TaskCache extends AbstractNodeCache{
         Task task = null;
         try {
             task = gson.fromJson(infoStr, Task.class);
+            cluster.getConf().setCommand(task.getCommand());
         }catch (Exception e){
             log.error("\t=== fail to convert json:{} ===", infoStr);
             return;
@@ -35,7 +36,7 @@ public class TaskCache extends AbstractNodeCache{
 
         if(task.getRunningProcessIDs().contains(cluster.getAgentName())){
             Long processID = processor.getProcessID();
-            if(processID==null){
+            if(processID==null || cluster.getConf().getCommand()==null){
                 processor.restart("TaskCache", task.getCommand());
             }else if(!cluster.getConf().getCommand().equals(task.getCommand())){
                 cluster.getConf().setCommand(task.getCommand());

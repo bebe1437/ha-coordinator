@@ -61,13 +61,13 @@ public class ConfNode extends AbsractNode{
         Config tmp  = gson.fromJson(conf, Config.class);
         if(!tmp.getCommand().equals(config.getCommand())){
             config.setCommand(tmp.getCommand());
-            cluster.assignTask(tmp.getCommand(), null ,null);
+            cluster.assignTask(tmp.getCommand());
         }
 
         if(tmp.getMaxProcessors()!=config.getMaxProcessors()){
             config.setMaxProcessors(tmp.getMaxProcessors());
             if(cluster.isMaster()) {
-                cluster.assignTask(null, null);
+                cluster.assignTask();
             }
         }
 

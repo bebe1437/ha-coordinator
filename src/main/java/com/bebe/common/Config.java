@@ -2,7 +2,7 @@ package com.bebe.common;
 
 import com.google.gson.annotations.SerializedName;
 
-public class Config {
+public class Config{
 
     @SerializedName("p.cmd")
     private String command;

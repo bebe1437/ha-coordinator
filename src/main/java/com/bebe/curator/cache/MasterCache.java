@@ -20,7 +20,7 @@ public class MasterCache extends AbstractNodeCache{
     @Override
     public void process(byte[] data) {
         if(cluster.isMaster()){
-            cluster.assignTask(cluster.getConf().getCommand(), null, null);
+            cluster.assignTask(cluster.getConf().getCommand());
         }else{
             checkWhoIsMaster();
         }
@@ -32,7 +32,7 @@ public class MasterCache extends AbstractNodeCache{
             List<String> children =  cluster.getClient().getChildren().forPath(cluster.getInfoMasterPath());
             cluster.setMaster(children.contains(cluster.getAgentName()));
             if(cluster.isMaster()){
-                cluster.assignTask(cluster.getConf().getCommand(), null, null);
+                cluster.assignTask(cluster.getConf().getCommand());
             }
         }catch (KeeperException.NoNodeException e){
         }catch (Exception e){

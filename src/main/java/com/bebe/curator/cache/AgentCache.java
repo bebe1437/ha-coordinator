@@ -3,7 +3,6 @@ package com.bebe.curator.cache;
 import com.bebe.curator.cluster.Cluster;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 
-import java.util.ArrayList;
 import java.util.Objects;
 
 public class AgentCache extends AbstractChildrenCache{
@@ -30,7 +29,7 @@ public class AgentCache extends AbstractChildrenCache{
             synchronized (children){
                 log.info("\t=== Alive agents[{}]:{} ===", children.size(), Objects.toString(children));
                 if(cluster.isMaster()) {
-                    cluster.assignTask(new ArrayList<String>(children), null);
+                    cluster.assignTask();
                 }
             }
         }

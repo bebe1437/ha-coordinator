@@ -16,12 +16,14 @@ import org.slf4j.LoggerFactory;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.Observable;
+import java.util.Observer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class Processor{
+public class Processor implements Observer{
     private static final Logger LOG = LoggerFactory.getLogger(Processor.class);
     private static final String PROCESS_PID_FILE = "process.pid";
 
@@ -91,6 +93,11 @@ public class Processor{
     private synchronized void runProcess(String command){
         try {
             LOG.info("\t=== exec command:{} ===", command);
+            if(command==null || command.isEmpty()){
+                LOG.error("\t=== Invalid command:{} ===", command);
+                client.close();
+                return;
+            }
             process = Runtime.getRuntime().exec(command);
             outputProcessID();
             startMonitor();
@@ -185,5 +192,10 @@ public class Processor{
         }finally{
             restartLock.release();
         }
+    }
+
+    @Override
+    public void update(Observable o, Object arg) {
+
     }
 }

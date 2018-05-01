@@ -3,7 +3,6 @@ package com.bebe.curator.cache;
 import com.bebe.curator.cluster.Cluster;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 
-import java.util.ArrayList;
 import java.util.Objects;
 
 public class ProcessCache extends AbstractChildrenCache{
@@ -32,7 +31,7 @@ public class ProcessCache extends AbstractChildrenCache{
                 int max = cluster.getConf().getMaxProcessors();
                 synchronized (children) {
                     if (children.size() < max) {
-                        cluster.assignTask(null, new ArrayList<String>(children));
+                        cluster.assignTask();
                     }
                 }
             }

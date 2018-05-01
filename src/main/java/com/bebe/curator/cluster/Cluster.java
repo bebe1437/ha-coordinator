@@ -10,8 +10,6 @@ import org.apache.curator.utils.CloseableUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-
 public class Cluster{
     private static final Logger LOG = LoggerFactory.getLogger(Cluster.class);
 
@@ -89,12 +87,11 @@ public class Cluster{
         this.isMaster = isMaster;
     }
 
-
-    public void assignTask(List<String> agents, List<String> processes){
-        assignTask(confNode.getConf().getCommand(), agents, processes);
+    public void assignTask(){
+        assignTask(confNode.getConf().getCommand());
     }
-    public void assignTask(String command, List<String> agents, List<String> processes){
-        arrangeProcessHandler.process(command, agents, processes);
+    public void assignTask(String command){
+        arrangeProcessHandler.process(command);
     }
 
     public void shutdown(String who){

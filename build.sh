@@ -29,6 +29,7 @@ if [ -d target ]; then
 	cp target/*.jar $DIR/
 	cp -r target/conf $DIR/ 
 	cp bin/*.sh $DIR/
+	cp -r webapp $DIR/
 
 	tar zcvf $DIR."$(timestamp)".tar.gz $DIR/
 	clean
